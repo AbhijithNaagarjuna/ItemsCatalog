@@ -1,7 +1,13 @@
 # ! /usr/bin/python
 
-from flask import Flask, render_template, url_for, request
-from flask import redirect, flash, jsonify, make_response
+from flask import (Flask,
+                   render_template,
+                   request,
+                   redirect,
+                   jsonify,
+                   url_for,
+                   flash,
+                   make_response)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Restaurant, MenuItem, User
@@ -154,13 +160,11 @@ def getUserID(email):
     try:
         user = session.query(User).filter_by(email=email).one()
         return user.id
-    except:
-        return None
 
 
 @app.route('/gdisconnect')
 def gdisconnect():
-        # Only disconnect a connected user.
+    # Only disconnect a connected user.
     access_token = login_session.get('access_token')
     if access_token is None:
         response = make_response(
@@ -228,7 +232,8 @@ def newRestaurant():
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
-        newRestaurant = Restaurant(name=request.form['name'])
+        newRestaurant = Restaurant(name=request.form['name'],
+                                   user_id=login_session['username'])
         session.add(newRestaurant)
         session.commit()
         return redirect(url_for('showRestaurants'))
@@ -244,7 +249,7 @@ def editRestaurant(restaurant_id):
         Restaurant).filter_by(id=restaurant_id).one()
     if 'username' not in login_session:
         return redirect('/login')
-    if editedRestaurant.user_id != login_session['user_id']:
+    if editedRestaurant.user_id != login_session['username']:
         return "<script>{alert('Unauthorized');}</script>"
     if request.method == 'POST':
         if request.form['name']:
@@ -264,7 +269,7 @@ def deleteRestaurant(restaurant_id):
         Restaurant).filter_by(id=restaurant_id).one()
     if 'username' not in login_session:
         return redirect('/login')
-    if restaurantToDelete.user_id != login_session['user_id']:
+    if restaurantToDelete.user_id != login_session['username']:
         return "<script>{alert('Unauthorized');}</script>"
     if request.method == 'POST':
         session.delete(restaurantToDelete)
@@ -301,7 +306,8 @@ def newMenuItem(restaurant_id):
         newItem = MenuItem(name=request.form['name'],
                            description=request.form['description'],
                            price=request.form['price'],
-                           restaurant_id=restaurant_id)
+                           restaurant_id=restaurant_id,
+                           user_id=login_session['username'])
         session.add(newItem)
         session.commit()
         flash("Menu Item has been added")
@@ -353,8 +359,9 @@ def deleteMenuItem(restaurant_id, menu_id):
     else:
         return render_template('deleteMenuItem.html', item=itemToDelete)
 
+
 # end of file
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
-    app.run(host='0.0.0.0', port=5000,threaded = False)
+    app.run(host='0.0.0.0', port=5000, threaded=False)
